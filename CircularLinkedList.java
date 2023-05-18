@@ -5,9 +5,18 @@ import java.util.NoSuchElementException;
  * Represents an expanded LinkedList that is circular (last element points to first)
  * @param <E> Data type of elements to be stored in the CircularLinkedList
  */
-public class CircularLinkedList<E> implements CircularLinkedListInterface<E> {
+public class CircularLinkedList<E> implements CircularLinkedListInterface<E>, Iterable<E> {
+    /**
+     * Front of the list, null if empty, or refers to an element
+     */
     private Node<E> front;
+    /**
+     * End of the list, null if empty, or refers to an element
+     */
     private Node<E> end;
+    /**
+     * Number of elements in the list
+     */
     private int size;
 
     /**
@@ -44,35 +53,118 @@ public class CircularLinkedList<E> implements CircularLinkedListInterface<E> {
      */
     @Override
     public E get(int position) {
-        if (position < 0 || position >= size) {
-            throw new IndexOutOfBoundsException("position must be in range 0 to size - 1");
-        }
-        int count = 0;
-        Node<E> current = front;
-        while (count < position) {
-            current = current.next;
-            count++;
-        }
-        return current.data;
+        return getNode(position).data;
     }
 
     /**
-     * Adds a new node to the end of the list; by nature, this element's next will point to the first element
-     *
-     * @param value the element to add to the list
+     * Retrieves the Node at the specified position in the list
+     * @param position 0 based index for the list; must be in the range 0 to size - 1
+     * @return the Node at the specified position in the list
      */
-    @Override
-    public void add(E value) {
-        Node<E> toAdd = new Node<>(value);
-        if (size == 0) {
-            front = toAdd;
-        } else {
-            end.next = toAdd;
+    private Node<E> getNode(int position) {
+        if (position < 0 || position >= size) {
+            throw new IndexOutOfBoundsException("position must be in range 0 to size - 1");
         }
-        end = toAdd;
-        toAdd.next = front;
+        Node<E> current = front;
+        for (int currentPos = 1; currentPos <= position; currentPos++) {
+            current = current.next;
+        }
+        return current;
+    }
+
+    /**
+     * Adds a new node to the front of the list
+     * @param data value to add to the list
+     */
+    public void addAtFront(E data) {
+        Node<E> newNode = new Node<>(data, front);
+        if (front == null) {
+            newNode.next = newNode;
+            end = newNode;
+        } else {
+            end.next = newNode;
+        }
+        front = newNode;
         size++;
     }
+    /**
+     * Adds a new node to the end of the list; by nature, this element's next will point to the first element
+     *
+     * @param data value to add to the list
+     */
+    @Override
+    public void add(E data) {
+        Node<E> newNode = new Node<>(data, front);
+        if (front == null) {
+            addAtFront(data);
+        } else {
+            end.next = newNode;
+            end = newNode;
+            size++;
+        }
+    }
+
+    /**
+     * Adds a second list to the end of the current list
+     * @param listToAdd list to be added
+     */
+    public void addListToList(CircularLinkedList<E> listToAdd) {
+        if (front == null) {
+            front = listToAdd.front;
+            end = listToAdd.end;
+        } else {
+            end.next = listToAdd.front;
+            end = listToAdd.end;
+            listToAdd.end.next = front;
+        }
+        size += listToAdd.getSize();
+    }
+
+    /**
+     * Returns the index of the first instance of the value
+     * @param value data value to look for
+     * @return the index of the value, or -1 if not found
+     */
+    public int indexOf(E value) {
+        if (front == null) {
+            return -1;
+        }
+        Node<E> current = front;
+        int position = 0;
+        if (current.data == value) {
+            return position;
+        }
+        while (current.next != front) {
+            position++;
+            current = current.next;
+            if (current.data == value) {
+                return position;
+            }
+        }
+        return -1;
+    }
+
+//    /**
+//     * Returns a reference to the first Node with the value
+//     * @param value data value to look for
+//     * @return a reference to the first Node with that value, or null if not found
+//     */
+//    private Node<E> nodeOf(E value) {
+//        if (front == null)  {
+//            return null;
+//        }
+//        Node<E> current = front;
+//        if (current.data == value) {
+//            return current;
+//        }
+//        while (current.next != front) {
+//            current = current.next;
+//            if (current.data == value) {
+//                return current;
+//            }
+//        }
+//        return null;
+//    }
 
     /**
      * Removes the specified item from the list, if it exists there.
@@ -82,7 +174,13 @@ public class CircularLinkedList<E> implements CircularLinkedListInterface<E> {
      */
     @Override
     public boolean remove(E value) {
-        return false;
+        int pos = indexOf(value);
+        if (pos == -1) {
+            return false;
+        } else {
+            remove(pos);
+            return true;
+        }
     }
 
     /**
@@ -92,9 +190,30 @@ public class CircularLinkedList<E> implements CircularLinkedListInterface<E> {
      */
     @Override
     public void remove(int position) {
+        if (position < 0 || position >= size) {
+            throw new IndexOutOfBoundsException("position must be in range 0 to size - 1");
+        }
+        if (position == 0) {
+            front = front.next;
+            size--;
+            return;
+        }
+        Node<E> current = front;
+        for (int pos = 1; pos < position; pos++) {
+            current = current.next;
+        }
+        if (position == size - 1) {
+            end = current.next.next;
+        }
+        current.next = current.next.next;
+        size--;
 
     }
 
+    /**
+     * Returns a String representation of the list
+     * @return String of all the elements in the list
+     */
     @Override
     public String toString() {
         if (size == 0) {
@@ -114,7 +233,6 @@ public class CircularLinkedList<E> implements CircularLinkedListInterface<E> {
     /**
      * Retrieves an iterator over the list's elements.  Do not do other list operations like add or remove
      * from within an iterator loop; the results are not guaranteed to function as you might expect
-     *
      * @return a strongly typed iterator over elements in the list
      */
     @Override
@@ -122,13 +240,23 @@ public class CircularLinkedList<E> implements CircularLinkedListInterface<E> {
         return new CircularLinkedListIterator();
     }
 
-
+    /**
+     * Iterator for the CircularLinkedList
+     */
     private class CircularLinkedListIterator implements Iterator<E> {
+
+        /**
+         * Current node being referenced by the iterator
+         */
         public Node<E> current;
+
+        /**
+         * Constructor
+         */
         public CircularLinkedListIterator() {
-            current = front;
+            current = null;
         }
-//constructor with set next for node?
+
         /**
          * Returns {@code true} if the iteration has more elements.
          * (In other words, returns {@code true} if {@link #next} would
@@ -152,7 +280,11 @@ public class CircularLinkedList<E> implements CircularLinkedListInterface<E> {
             if (!hasNext()) {
                 throw new NoSuchElementException();
             } else {
-                current = current.next;
+                if (current == null) {
+                    current = front;
+                } else {
+                    current = current.next;
+                }
                 return current.data;
             }
         }
@@ -162,12 +294,31 @@ public class CircularLinkedList<E> implements CircularLinkedListInterface<E> {
      * @param <T> Data type of element data to be stored
      */
     private static class Node<T> {
+        /**
+         * the data to be added to the list
+         */
         public T data;
+        /**
+         * node that this node should connect to
+         */
         public Node<T> next;
 
-        public Node(T data) {
+//basic constructors, did not use
+//        public Node() {
+//            this(null, null);
+//        }
+//        public Node(T data) {
+//            this(data, null);
+//        }
+
+        /**
+         * Constructor
+         * @param data the data to be added to the list
+         * @param next  node that this node should connect to
+         */
+        public Node(T data, Node<T> next) {
             this.data = data;
-            this.next = null;
+            this.next = next;
         }
     }
 }

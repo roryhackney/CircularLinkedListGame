@@ -3,6 +3,7 @@ import java.util.NoSuchElementException;
 
 /**
  * Requirements for CircularLinkedList class
+ * @param <E> element type of the values in the list to be iterated over
  */
 public interface CircularLinkedListInterface<E> {
 
